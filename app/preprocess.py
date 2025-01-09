@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 import pandas as pd
 import re
+import numpy as np
 import nltk
 from nltk.corpus import stopwords
 
@@ -37,6 +38,32 @@ def load_data():
     df_processed = cleaning(df_preprocess, 'cleaned_text')
 
     return df_processed.cleaned_text.tolist()
+
+# Save embeddings
+def save_embeddings(embeddings, file_path):
+    """
+    Save embeddings to a NumPy .npy file.
+
+    Args:
+        embeddings (torch.Tensor): Tensor of embeddings to save.
+        file_path (str): Path to save the file.
+    """
+    # Convert to NumPy array and save
+    np.save(file_path, embeddings.numpy())
+    print(f"Embeddings saved to {file_path}")
+
+# Load embeddings
+def load_saved_embeddings(file_path):
+    """
+    Load embeddings from a saved .npy file.
+
+    Args:
+        file_path (str): Path to the .npy file.
+
+    Returns:
+        numpy.ndarray: Loaded embeddings.
+    """
+    return np.load(file_path)
 
 def remove_emojis(x):
     regex_pattern = re.compile(pattern = "["

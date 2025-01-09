@@ -1,7 +1,7 @@
-from app.preprocess import load_data, generate_embeddings
+from app.preprocess import load_data, generate_embeddings, save_embeddings
 from app.clustering import reduce_dimensions, perform_clustering
 from app.utils import save_results
-from app.config import N_CLUSTERS, REDUCE_DIMENSIONS
+from app.config import N_CLUSTERS, REDUCE_DIMENSIONS, EMBEDDINGS_PATH
 
 def main():
     # Step 1: Load Data
@@ -13,8 +13,7 @@ def main():
     # Step 2: Generate Embeddings
     print("Generating embeddings...")
     embeddings = generate_embeddings(texts)
-
-    print(embeddings)
+    save_embeddings(embeddings, EMBEDDINGS_PATH)
     
     # Step 3: Dimensionality Reduction
     print("Reducing dimensions...")
