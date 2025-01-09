@@ -7,22 +7,26 @@ def main():
     # Step 1: Load Data
     print("Loading dataset...")
     texts = load_data()
+
+    # print(texts)
     
     # Step 2: Generate Embeddings
     print("Generating embeddings...")
     embeddings = generate_embeddings(texts)
+
+    print(embeddings)
     
     # Step 3: Dimensionality Reduction
     print("Reducing dimensions...")
-    reduced_data = reduce_dimensions(embeddings, n_components=REDUCE_DIMENSIONS)
+    #reduced_data = reduce_dimensions(embeddings, n_components=REDUCE_DIMENSIONS)
     
     # Step 4: Perform Clustering
     print("Clustering data...")
-    clusters = perform_clustering(reduced_data, n_clusters=N_CLUSTERS)
+    #clusters = perform_clustering(reduced_data, n_clusters=N_CLUSTERS)
     
     # Step 5: Save Results
     print("Saving results...")
-    save_results(clusters, reduced_data)
+    #save_results(clusters, reduced_data)
     
     print("Clustering completed. Results saved.")
 
