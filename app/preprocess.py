@@ -1,25 +1,20 @@
-from transformers import BertTokenizer, BertModel
-import torch
-from torch.utils.data import DataLoader, Dataset
 import pandas as pd
 import re
 import numpy as np
 import nltk
 from nltk.corpus import stopwords
+from nltk import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 
 from app.config import DATA_PATH
 
 nltk.download('stopwords')
+nltk.download('punkt')
 stop = set(stopwords.words('english'))
+nltk.download('wordnet')
 
-# Load BERT model and tokenizer
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-model = BertModel.from_pretrained('bert-base-uncased')
-
-# Move the model to GPU if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-
+stemmer = PorterStemmer()
+lemma = WordNetLemmatizer()
 
 
 def load_data():
@@ -37,7 +32,16 @@ def load_data():
     # Apply the cleaning function
     df_processed = cleaning(df_preprocess, 'cleaned_text')
 
-    return df_processed.cleaned_text.tolist()
+    text =  df_processed.cleaned_text.tolist()
+
+    all_sentences = []
+
+    for intent in text:
+        for sentence in nltk.sent_tokenize(intent):
+            if len(sentence.split()) > 4:
+                all_sentences.append(sentence)
+
+    return all_sentences
 
 # Save embeddings
 def save_embeddings(embeddings, file_path):
@@ -103,6 +107,18 @@ def remove_stopwords(text):
     """Remove stopwords from text."""
     return " ".join([word.lower() for word in text.split() if word.lower() not in stop])
 
+from nltk.corpus import stopwords
+from nltk.stem import SnowballStemmer
+
+def Stemming(text):
+    stem = []
+    stopword = stopwords.words('english')
+    snowball_stemmer = SnowballStemmer('english')
+    word_tokens = nltk.word_tokenize(text)
+    stemmed_word = [ snowball_stemmer.stem(word) for word in word_tokens ]
+    stem = ' '.join(stemmed_word)
+    return stem
+
 def cleaning(df, column):
     """Apply cleaning operations to a DataFrame column."""
     df[column] = df[column].apply(clean_text)
@@ -111,74 +127,5 @@ def cleaning(df, column):
     df[column] = df[column].apply(remove_symbols)
     df[column] = df[column].apply(remove_punctuation)
     df[column] = df[column].apply(remove_stopwords)
+    df[column] = df[column].apply(Stemming)
     return df
-
-# Dataset for managing text inputs
-class TextDataset(Dataset):
-    def __init__(self, texts, tokenizer, max_length=512):
-        self.texts = texts
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-
-    def __len__(self):
-        return len(self.texts)
-
-    def __getitem__(self, idx):
-        encoded = self.tokenizer(
-            self.texts[idx],
-            max_length=self.max_length,
-            padding="max_length",
-            truncation=True,
-            return_tensors="pt",
-        )
-        return {key: val.squeeze(0) for key, val in encoded.items()}
-
-# def generate_embeddings(texts):
-#     """Generate BERT embeddings for a list of texts."""
-#     embeddings = []
-
-#     model.eval()
-
-#     for text in texts:
-#         inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=512)
-#         with torch.no_grad():
-#             outputs = model(**inputs)
-#             embeddings.append(outputs.last_hidden_state.mean(dim=1).squeeze().numpy())
-#     return embeddings
-
-# Generate embeddings using GPU
-def generate_embeddings(texts, batch_size=16, max_length=512):
-    """
-    Generate BERT embeddings for a list of texts using GPU acceleration.
-
-    Args:
-        texts (list): List of text strings.
-        batch_size (int): Number of texts processed in a batch.
-        max_length (int): Maximum token length for BERT input.
-
-    Returns:
-        torch.Tensor: Tensor of embeddings.
-    """
-    # Prepare dataset and dataloader
-    dataset = TextDataset(texts, tokenizer, max_length)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
-
-    embeddings = []
-
-    model.eval()  # Set model to evaluation mode
-    with torch.no_grad():
-        for batch in dataloader:
-            # Move batch data to GPU
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-
-            # Generate embeddings
-            outputs = model(input_ids, attention_mask=attention_mask)
-            last_hidden_state = outputs.last_hidden_state  # Shape: (batch_size, seq_len, hidden_size)
-
-            # Pooling: Mean of all tokens in the sequence
-            pooled_embeddings = last_hidden_state.mean(dim=1)  # Shape: (batch_size, hidden_size)
-            embeddings.append(pooled_embeddings.cpu())  # Move to CPU to save memory
-
-    # Concatenate all embeddings
-    return torch.cat(embeddings, dim=0)

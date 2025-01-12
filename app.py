@@ -1,28 +1,31 @@
-from app.preprocess import load_data, generate_embeddings, save_embeddings
-from app.clustering import reduce_dimensions, perform_clustering
+from app.preprocess import load_data, save_embeddings, load_saved_embeddings
+from app.hyperparam_opt import bayesian_optimization, hspace
+from app.model import generate_embeddings
 from app.utils import save_results
 from app.config import N_CLUSTERS, REDUCE_DIMENSIONS, EMBEDDINGS_PATH
 
 def main():
     # Step 1: Load Data
     print("Loading dataset...")
-    texts = load_data()
-
-    # print(texts)
+    sentences = load_data()
     
     # Step 2: Generate Embeddings
     print("Generating embeddings...")
-    embeddings = generate_embeddings(texts)
+    embeddings = generate_embeddings(sentences)
     save_embeddings(embeddings, EMBEDDINGS_PATH)
+    # embeddings = load_saved_embeddings(EMBEDDINGS_PATH)
     
-    # Step 3: Dimensionality Reduction
-    print("Reducing dimensions...")
-    #reduced_data = reduce_dimensions(embeddings, n_components=REDUCE_DIMENSIONS)
-    
-    # Step 4: Perform Clustering
+    # Step 3: Perform Clustering
     print("Clustering data...")
-    #clusters = perform_clustering(reduced_data, n_clusters=N_CLUSTERS)
-    
+    label_lower = 10
+    label_upper = 100
+    max_evals = 25
+    best_params_use, best_clusters_use, trials_use = bayesian_optimization(embeddings, hspace, label_lower, label_upper, max_evals)
+
+    for index, cluster in enumerate(best_clusters_use.labels_):
+        if cluster == 2:
+            print(f"Cluster {cluster}: {sentences[index]}")
+
     # Step 5: Save Results
     print("Saving results...")
     #save_results(clusters, reduced_data)
