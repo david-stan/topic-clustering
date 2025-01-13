@@ -4,7 +4,6 @@ import numpy as np
 import nltk
 from nltk.corpus import stopwords
 from nltk import WordNetLemmatizer
-from nltk.stem import PorterStemmer
 
 from app.config import DATA_PATH
 
@@ -13,7 +12,6 @@ nltk.download('punkt')
 stop = set(stopwords.words('english'))
 nltk.download('wordnet')
 
-stemmer = PorterStemmer()
 lemma = WordNetLemmatizer()
 
 
@@ -83,7 +81,7 @@ def clean_text(text):
     text = remove_emojis(text)
     text = re.sub(r'http\S+', '', text)  # Remove URLs
     text = re.sub(r'<.*?>', '', text)  # Remove HTML tags
-    text = re.sub(r'[^a-zA-Z\s]', '', text)  # Remove punctuation and numbers
+    # text = re.sub(r'[^a-zA-Z\s]', '', text)  # Remove punctuation and numbers
     text = text.lower()  # Convert to lowercase
     return text
 
@@ -107,17 +105,13 @@ def remove_stopwords(text):
     """Remove stopwords from text."""
     return " ".join([word.lower() for word in text.split() if word.lower() not in stop])
 
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
-
-def Stemming(text):
-    stem = []
-    stopword = stopwords.words('english')
-    snowball_stemmer = SnowballStemmer('english')
-    word_tokens = nltk.word_tokenize(text)
-    stemmed_word = [ snowball_stemmer.stem(word) for word in word_tokens ]
-    stem = ' '.join(stemmed_word)
-    return stem
+def Lemmatize(text):
+    # Remove non-alphabetic characters
+    text = re.sub(r"[^a-zA-Z\s]", "", text.lower())
+    # Tokenize and lemmatize
+    words = text.split()
+    lemmatized_words = [lemma.lemmatize(word) for word in words]
+    return " ".join(lemmatized_words)
 
 def cleaning(df, column):
     """Apply cleaning operations to a DataFrame column."""
@@ -127,5 +121,5 @@ def cleaning(df, column):
     df[column] = df[column].apply(remove_symbols)
     df[column] = df[column].apply(remove_punctuation)
     df[column] = df[column].apply(remove_stopwords)
-    df[column] = df[column].apply(Stemming)
+    df[column] = df[column].apply(Lemmatize)
     return df
