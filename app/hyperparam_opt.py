@@ -57,7 +57,7 @@ def objective(params, embeddings, label_lower, label_upper):
 
 
 
-def bayesian_optimization(embeddings, space, label_lower, label_upper, max_evals=100):
+def bayesian_optimization(embeddings):
     """
     Perform bayesian search on hyperparameter space using hyperopt
 
@@ -81,10 +81,19 @@ def bayesian_optimization(embeddings, space, label_lower, label_upper, max_evals
 
     """
     trials = Trials()
+    label_lower = 10
+    label_upper = 50
+    hspace = {
+        'n_neighbors': hp.choice('n_neighbors', range(5, 50)),              # Focus on local-global balance
+        'n_components': hp.choice('n_components', range(2, 20)),            # Dimensionality of UMAP output
+        'min_cluster_size': hp.choice('min_cluster_size', range(2, 30)),    # Minimum cluster size
+        'min_samples': hp.choice('min_samples', range(1, 15)),              # Robustness to noise
+        'random_state': 42                                                  # For reproducibility
+    }
     fmin_objective = partial(objective, embeddings=embeddings, label_lower=label_lower, label_upper=label_upper)
-    best = fmin(fmin_objective, space, algo=tpe.suggest, max_evals=100, trials=trials)
+    best = fmin(fmin_objective, hspace, algo=tpe.suggest, max_evals=100, trials=trials)
 
-    best_params = space_eval(space, best)
+    best_params = space_eval(hspace, best)
 
     print('best parameters:', best_params)
     print(f"label_count: {trials.best_trial['result']['label_count']}")
@@ -92,11 +101,3 @@ def bayesian_optimization(embeddings, space, label_lower, label_upper, max_evals
     best_clusters = objective_wrapper(embeddings, **best_params)
 
     return best_params, best_clusters, trials
-
-hspace = {
-    'n_neighbors': hp.choice('n_neighbors', range(3, 32)),
-    'min_cluster_size': hp.choice('min_cluster_size', range(2, 32)),
-    "n_components": hp.choice("n_components", range(2, 32)),
-    "min_samples": hp.choice("min_samples", range(2, 32)),
-    "random_state": 42
-}

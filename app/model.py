@@ -1,6 +1,21 @@
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, pipeline
 import torch
 import torch.nn.functional as F
+
+# Initialize zero-shot classifier
+classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+
+# Define main categories
+main_categories = [
+    "Politics",
+    "Business",
+    "Technology",
+    "Health",
+    "Sports",
+    "Conflict",
+    "International Relations",
+    "Environment"
+]
 
 #Mean Pooling - Take attention mask into account for correct averaging
 def mean_pooling(model_output, attention_mask):
@@ -21,7 +36,7 @@ def generate_embeddings(sentences):
     model.to(device)
 
     # Process sentences in batches to avoid CUDA out of memory error
-    batch_size = 8
+    batch_size = 16
     sentence_embeddings = []
 
     for i in range(0, len(sentences), batch_size):
@@ -45,3 +60,11 @@ def generate_embeddings(sentences):
     sentence_embeddings = torch.cat(sentence_embeddings, dim=0)
 
     return sentence_embeddings
+
+# Assign main category using zero-shot classification
+def assign_main_category(cluster_text):
+    """
+    Assign a main category to a cluster using zero-shot classification.
+    """
+    result = classifier(cluster_text, main_categories, multi_label=False)
+    return result["labels"][0]  # Return the top category

@@ -9,8 +9,9 @@ from app.config import DATA_PATH
 
 nltk.download('stopwords')
 nltk.download('punkt')
-stop = set(stopwords.words('english'))
+nltk_stopwords = set(stopwords.words("english"))
 nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
 
 lemma = WordNetLemmatizer()
 
@@ -101,17 +102,23 @@ def remove_punctuation(text):
     """Remove punctuation from text."""
     return "".join([char for char in text if char not in ('!', ',', '.', '?', ';', ':', '-', "'")])
 
-def remove_stopwords(text):
-    """Remove stopwords from text."""
-    return " ".join([word.lower() for word in text.split() if word.lower() not in stop])
+# def remove_stopwords(text):
+#     """Remove stopwords from text."""
+#     return " ".join([word.lower() for word in text.split() if word.lower() not in stop])
 
 def Lemmatize(text):
-    # Remove non-alphabetic characters
-    text = re.sub(r"[^a-zA-Z\s]", "", text.lower())
-    # Tokenize and lemmatize
-    words = text.split()
-    lemmatized_words = [lemma.lemmatize(word) for word in words]
-    return " ".join(lemmatized_words)
+    """
+    Preprocess text by cleaning, tokenizing, removing stopwords, lemmatizing, and filtering verbs.
+    """
+    text = re.sub(r"[^a-zA-Z\s]", "", text.lower())  # Remove non-alphabetic characters
+    tokens = nltk.word_tokenize(text)  # Tokenize text
+    tokens = [lemma.lemmatize(word) for word in tokens if word not in nltk_stopwords]  # Lemmatize and remove stopwords
+    
+    # Filter out verbs
+    pos_tags = nltk.pos_tag(tokens)
+    filtered_tokens = [word for word, pos in pos_tags if pos not in ("VB", "VBD", "VBG", "VBN", "VBP", "VBZ")]
+    
+    return " ".join(filtered_tokens)
 
 def cleaning(df, column):
     """Apply cleaning operations to a DataFrame column."""
@@ -120,6 +127,6 @@ def cleaning(df, column):
     df[column] = df[column].apply(unify_whitespace)
     df[column] = df[column].apply(remove_symbols)
     df[column] = df[column].apply(remove_punctuation)
-    df[column] = df[column].apply(remove_stopwords)
+    # df[column] = df[column].apply(remove_stopwords)
     df[column] = df[column].apply(Lemmatize)
     return df
